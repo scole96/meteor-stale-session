@@ -11,6 +11,7 @@ var timeoutInterval = Meteor.settings && Meteor.settings.public && Meteor.settin
 var activityEvents = Meteor.settings && Meteor.settings.public && Meteor.settings.public.staleSessionActivityEvents || 'mousemove click keydown';
 
 var activityDetected = false;
+var inactvityStarted = new Date();
 
 //
 // periodically send a heartbeat if activity has been detected within the interval
@@ -19,14 +20,15 @@ Meteor.setInterval(function() {
     if (Meteor.userId() && activityDetected) {
         Meteor.call('heartbeat');
         activityDetected = false;
+        inactvityStarted = new Date();
+    }else{
+        timeout = moment(inactvityStarted).add('milliseconds', timeoutInterval)
+        if(timeout.isBefore(moment())){
+            Meteor.logout();
+            Router.go('entrySignIn');
+        }
     }
 }, heartbeatInterval);
-
-Meteor.setInterval(function() {
-    if (Meteor.userId() && !activityDetected) {
-        Meteor.logout();
-    }
-}, timeoutInterval);
 
 //
 // detect activity and mark it as detected on any of the following events
